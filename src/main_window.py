@@ -1,7 +1,18 @@
 from tkinter import filedialog, messagebox
 from tkinter import *
-from asn1_codec.asn1_codec import Asn1Codec
-from utils import reformat_payload, read_from_file
+from asn1_codec import Asn1Codec
+
+
+def reformat_payload(payload):
+    return "".join(payload.split())
+
+
+def read_from_file(filename):
+    data = ''
+    with open(filename, "r") as fd:
+        data = fd.read()
+    return data
+
 
 class MainWindow(object):
     def __init__(self, window):

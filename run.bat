@@ -1,2 +1,2 @@
-@set PYTHONPATH=%PYTHONPATH%;%cd%\externals\asn1codec;
+@set PYTHONPATH=%PYTHONPATH%;%cd%\externals\asn1codec;%cd%\externals\asn1codec\externals\pycrate
 @python ./src/main.py
