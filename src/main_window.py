@@ -14,6 +14,25 @@ def read_from_file(filename):
     return data
 
 
+def get_definition_part_position(text, word):
+    import re
+    lines = text.split("\n")
+    x0, y0, x1, y1 = 0, 0, 0, 0
+    isDefinitionFound = False
+    bracket_count = 0
+    for i in range(0, len(lines)):
+        if isDefinitionFound:
+            bracket_count += (lines[i].count("{") - lines[i].count("}"))
+            if bracket_count == 0: return x0, y0, i+2, len(lines[i])
+        else:
+            if re.match(r"{}\s*::=".format(word), lines[i]):
+                isDefinitionFound = True
+                x0, y0 = i+2, 0
+                bracket_count += (lines[i].count("{") - lines[i].count("}"))
+                if bracket_count == 0: return x0, y0, i+2, len(lines[i])
+    return x0, y0, x1, y1
+
+
 class MainWindow(object):
     def __init__(self, window):
         self.window = window
@@ -43,7 +62,7 @@ class MainWindow(object):
 
     def deploy_components(self):
         head_frame = Frame(self.window)
-        head_frame.pack(side=TOP, anchor="w", expand=1)
+        head_frame.pack(side=TOP, fill=BOTH, expand=1)
         self._deploy_components_on_head_frame(head_frame)
         body_frame = Frame(self.window)
         body_frame.pack(side=BOTTOM, fill=BOTH, expand=1)
@@ -91,11 +110,22 @@ class MainWindow(object):
         definition = self.codec_engine.get_message_definition(self.selected_msg)
         self.msg_info_box.delete(1.0, "end")
         self.msg_info_box.insert("end", definition)
+    
+    def on_word_selected_in_msg_info_box(self, event):
+        self.msg_info_box.tag_remove("SELECT_TEXT", "1.0", END)
+        word = ''
+        try: word = self.msg_info_box.selection_get()
+        except: pass
+        if word.strip() == '': return
+        text = self.msg_info_box.get(1.0, "end").strip()
+        x0, y0, x1, y1 = get_definition_part_position(text, word)
+        self.msg_info_box.tag_add("SELECT_TEXT", "{}.{}".format(x0, y0) , "{}.{}".format(x1, y1))
 
     def _deploy_components_on_head_frame(self, frame):
         Button(frame, text='open', command=self.on_open_file_clicked, bd=5).pack(side=LEFT)
         Button(frame, text='compile', command=self.on_compile_clicked, bd=5).pack(side=LEFT)
         Label(frame, textvariable=self.asn_file_name, font=('Arial', 12)).pack(side=LEFT)
+        Label(frame, text="StoryMonster  ", font=('', 16)).pack(side=RIGHT)
 
     def _deploy_components_on_message_list_frame(self, frame):
         listbox_x_scrollar_bar = Scrollbar(frame, orient=HORIZONTAL)
@@ -158,8 +188,10 @@ class MainWindow(object):
         msg_info_y_scrollar_bar.pack(side=RIGHT, fill=Y)
         self.msg_info_box = Text(frame, bd=5, wrap="none", xscrollcommand=msg_info_x_scrollar_bar.set, yscrollcommand=msg_info_y_scrollar_bar.set)
         self.msg_info_box.pack(side=RIGHT, fill=BOTH, expand=1)
+        self.msg_info_box.bind("<ButtonRelease-1>", self.on_word_selected_in_msg_info_box)
         msg_info_x_scrollar_bar.config(command=self.msg_info_box.xview)
         msg_info_y_scrollar_bar.config(command=self.msg_info_box.yview)
+        self.msg_info_box.tag_configure("SELECT_TEXT", background="blue", foreground="yellow")
 
     def _deploy_components_on_body_frame(self, frame):
         message_list_frame = Frame(frame)
