@@ -120,6 +120,15 @@ class MainWindow(object):
         text = self.msg_info_box.get(1.0, "end").strip()
         x0, y0, x1, y1 = get_definition_part_position(text, word)
         self.msg_info_box.tag_add("SELECT_TEXT", "{}.{}".format(x0, y0) , "{}.{}".format(x1, y1))
+    
+    def on_new_row_created(self, event):
+        lines = self.input_box.get(1.0, "end").split('\n')
+        import re
+        matched = re.match(r"(\s+)\S*", lines[-2])
+        if matched:
+            self.input_box.insert("end", "\n" + matched.group(1))
+        self.input_box.see("end")
+        return 'break'
 
     def _deploy_components_on_head_frame(self, frame):
         Button(frame, text='open', command=self.on_open_file_clicked, bd=5).pack(side=LEFT)
@@ -146,6 +155,7 @@ class MainWindow(object):
         input_y_scrollar_bar.pack(side=RIGHT, fill=Y)
         self.input_box = Text(frame, bd=5, wrap="none", xscrollcommand=input_x_scrollar_bar.set, yscrollcommand=input_y_scrollar_bar.set)
         self.input_box.pack(anchor="center", fill=BOTH, expand=1)
+        self.input_box.bind("<Return>", self.on_new_row_created)
         input_x_scrollar_bar.config(command=self.input_box.xview)
         input_y_scrollar_bar.config(command=self.input_box.yview)
     
