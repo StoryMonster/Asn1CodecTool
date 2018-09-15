@@ -33,6 +33,20 @@ def get_definition_part_position(text, word):
     return x0, y0, x1, y1
 
 
+def get_cursor_position(widget):
+    infors = widget.index(INSERT).split(".")
+    row, col = int(infors[0]), int(infors[1])
+    return row, col
+
+
+def get_selected_word_in_text_box(widget):
+    word = ''
+    try: word = widget.selection_get()
+    except: pass
+    if word.strip() == '': return ''
+    return word
+
+
 class MainWindow(object):
     def __init__(self, window):
         self.window = window
@@ -42,6 +56,7 @@ class MainWindow(object):
         self.code_format = StringVar()
         self.code_format.set("asn1")
         self.input_box, self.output_box, self.msg_info_box = None, None, None
+        self.msg_info_menu = None
         self.msg_list_box, self.selected_msg = None, None
         self.codec_engine = None
         import os
@@ -113,22 +128,33 @@ class MainWindow(object):
     
     def on_word_selected_in_msg_info_box(self, event):
         self.msg_info_box.tag_remove("SELECT_TEXT", "1.0", END)
-        word = ''
-        try: word = self.msg_info_box.selection_get()
-        except: pass
-        if word.strip() == '': return
+        word = get_selected_word_in_text_box(self.msg_info_box)
         text = self.msg_info_box.get(1.0, "end").strip()
         x0, y0, x1, y1 = get_definition_part_position(text, word)
         self.msg_info_box.tag_add("SELECT_TEXT", "{}.{}".format(x0, y0) , "{}.{}".format(x1, y1))
     
     def on_new_row_created(self, event):
+        row, col = get_cursor_position(self.input_box)
         lines = self.input_box.get(1.0, "end").split('\n')
+        first_part, second_part = lines[row-1][:col], lines[row-1][col:]
+        string_to_insert = '\n'
         import re
-        matched = re.match(r"(\s+)\S*", lines[-2])
+        matched = re.match(r"(\s+)\S*", lines[row-1])
         if matched:
-            self.input_box.insert("end", "\n" + matched.group(1))
-        self.input_box.see("end")
+            string_to_insert += matched.group(1)
+        self.input_box.insert("%d.%d" % (row, col), string_to_insert)
+        self.input_box.see(INSERT)
         return 'break'
+    
+    def popup_msg_info_box_menu(self, event):
+        self.msg_info_menu.post(event.x_root,event.y_root)
+    
+    def go_to_msg_definition(self):
+        word = get_selected_word_in_text_box(self.msg_info_box)
+        text = self.msg_info_box.get(1.0, "end")
+        x0, y0, x1, y1 = get_definition_part_position(text, word)
+        if x0==0 and y0==0: return
+        self.msg_info_box.see("%d.%d" % (x0, y0))
 
     def _deploy_components_on_head_frame(self, frame):
         Button(frame, text='open', command=self.on_open_file_clicked, bd=5).pack(side=LEFT)
@@ -191,6 +217,10 @@ class MainWindow(object):
         output_frame.pack(side=BOTTOM, fill=BOTH, expand=1)
         self._deploy_components_on_output_frame(output_frame)
 
+    def _deploy_menu_on_msg_info_box(self, widget):
+        self.msg_info_menu = Menu(widget, tearoff=0)
+        self.msg_info_menu.add_command(label="go to definition", command=self.go_to_msg_definition)
+
     def _deploy_components_on_msg_info_frame(self, frame):
         msg_info_x_scrollar_bar = Scrollbar(frame, orient=HORIZONTAL)
         msg_info_x_scrollar_bar.pack(side=BOTTOM, fill=X)
@@ -198,10 +228,12 @@ class MainWindow(object):
         msg_info_y_scrollar_bar.pack(side=RIGHT, fill=Y)
         self.msg_info_box = Text(frame, bd=5, wrap="none", xscrollcommand=msg_info_x_scrollar_bar.set, yscrollcommand=msg_info_y_scrollar_bar.set)
         self.msg_info_box.pack(side=RIGHT, fill=BOTH, expand=1)
-        self.msg_info_box.bind("<ButtonRelease-1>", self.on_word_selected_in_msg_info_box)
         msg_info_x_scrollar_bar.config(command=self.msg_info_box.xview)
         msg_info_y_scrollar_bar.config(command=self.msg_info_box.yview)
         self.msg_info_box.tag_configure("SELECT_TEXT", background="blue", foreground="yellow")
+        self._deploy_menu_on_msg_info_box(self.msg_info_box)
+        self.msg_info_box.bind("<Button-3>", self.popup_msg_info_box_menu)
+        self.msg_info_box.bind("<ButtonRelease-1>", self.on_word_selected_in_msg_info_box)
 
     def _deploy_components_on_body_frame(self, frame):
         message_list_frame = Frame(frame)
