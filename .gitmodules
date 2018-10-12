@@ -1,3 +1,3 @@
-[submodule "externals/asn1codec"]
-	path = externals/asn1codec
-	url = git@github.com:StoryMonster/asn1codec.git
+[submodule "externals/pycrate"]
+	path = externals/pycrate
+	url = git@github.com:P1sec/pycrate.git

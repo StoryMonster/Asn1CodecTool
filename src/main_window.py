@@ -1,6 +1,6 @@
 from tkinter import filedialog, messagebox
 from tkinter import *
-from asn1_codec import Asn1Codec
+from asn1codec.asn1_codec import Asn1Codec
 
 
 def reformat_payload(payload):
@@ -19,17 +19,13 @@ def get_definition_part_position(text, word):
     lines = text.split("\n")
     x0, y0, x1, y1 = 0, 0, 0, 0
     isDefinitionFound = False
-    bracket_count = 0
     for i in range(0, len(lines)):
         if isDefinitionFound:
-            bracket_count += (lines[i].count("{") - lines[i].count("}"))
-            if bracket_count == 0: return x0, y0, i+2, len(lines[i])
+            if lines[i].strip() == "" or i == len(lines)-1: return x0, y0, i+1, len(lines[i])
         else:
-            if re.match(r"{}\s*::=".format(word), lines[i]):
+            if lines[i].find(word) == 0 and re.findall("\S+", lines[i])[0] == word:
                 isDefinitionFound = True
-                x0, y0 = i+2, 0
-                bracket_count += (lines[i].count("{") - lines[i].count("}"))
-                if bracket_count == 0: return x0, y0, i+2, len(lines[i])
+                x0, y0 = i+1, 0
     return x0, y0, x1, y1
 
 
@@ -129,6 +125,7 @@ class MainWindow(object):
     def on_word_selected_in_msg_info_box(self, event):
         self.msg_info_box.tag_remove("SELECT_TEXT", "1.0", END)
         word = get_selected_word_in_text_box(self.msg_info_box)
+        if word == "": return
         text = self.msg_info_box.get(1.0, "end").strip()
         x0, y0, x1, y1 = get_definition_part_position(text, word)
         self.msg_info_box.tag_add("SELECT_TEXT", "{}.{}".format(x0, y0) , "{}.{}".format(x1, y1))
