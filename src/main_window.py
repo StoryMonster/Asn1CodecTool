@@ -1,6 +1,7 @@
 from tkinter import filedialog, messagebox
 from tkinter import *
 from asn1codec.asn1_codec import Asn1Codec
+import os
 
 
 def reformat_payload(payload):
@@ -44,7 +45,8 @@ def get_selected_word_in_text_box(widget):
 
 
 class MainWindow(object):
-    def __init__(self, window):
+    def __init__(self, window, context):
+        self.context = context
         self.window = window
         self.asn_file_name = StringVar()
         self.protocol = StringVar()
@@ -55,10 +57,10 @@ class MainWindow(object):
         self.msg_info_menu = None
         self.msg_list_box, self.selected_msg = None, None
         self.codec_engine = None
-        import os
         self.py_file = os.path.join(os.getcwd(), "output/output.py")
         self.init_client_surface()
         self.deploy_components()
+        self.window.protocol("WM_DELETE_WINDOW", self.on_closing_window)
 
     def init_client_surface(self):
         self.window.title('ASN1CODEC')
@@ -78,9 +80,17 @@ class MainWindow(object):
         body_frame = Frame(self.window)
         body_frame.pack(side=BOTTOM, fill=BOTH, expand=1)
         self._deploy_components_on_body_frame(body_frame)
+    
+    def on_closing_window(self):
+        import json
+        with open("config.ini", "w") as fd:
+            fd.write(json.dumps(self.context))
+        self.window.destroy()
 
     def on_open_file_clicked(self):
-        self.asn_file_name.set(filedialog.askopenfilename(initialdir = ".", title = "Select file", filetypes=(('asn files', 'asn'),)))
+        dir_to_open = self.context["asn1_dir"] if os.path.exists(self.context["asn1_dir"]) else "."
+        self.asn_file_name.set(filedialog.askopenfilename(initialdir = dir_to_open, title = "Select file", filetypes=(('asn files', 'asn'),)))
+        self.context["asn1_dir"] = os.path.dirname(self.asn_file_name.get())
 
     def on_compile_clicked(self):
         filename = self.asn_file_name.get()
