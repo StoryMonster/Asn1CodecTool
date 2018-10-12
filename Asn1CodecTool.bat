@@ -1,2 +1,2 @@
 @set PYTHONPATH=%PYTHONPATH%;%cd%\externals\pycrate
-@start /b python ./src/main.pyw
+@start /b pythonw ./src/main.pyw
