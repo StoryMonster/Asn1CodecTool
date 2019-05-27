@@ -22,11 +22,14 @@ def get_definition_part_position(text, word):
     isDefinitionFound = False
     for i in range(0, len(lines)):
         if isDefinitionFound:
-            if lines[i].strip() == "" or i == len(lines)-1: return x0, y0, i+1, len(lines[i])
+            x1 += 1
+            y1 = len(lines[i])
+            if lines[i].strip() == "": break
         else:
             if lines[i].find(word) == 0 and re.findall("\S+", lines[i])[0] == word:
                 isDefinitionFound = True
                 x0, y0 = i+1, 0
+                x1, y1 = x0, len(lines[i])
     return x0, y0, x1, y1
 
 
